@@ -1,0 +1,201 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>WasAnton.de | Pictures</title>
+<style>
+  :root {
+    --bg: #e5e5e5;
+    --page: #ffffff;
+    --head: #003399;
+    --head2: #6699cc;
+    --accent: #ff6600;
+    --box-head: #ffcc99;
+    --box-head-text: #ff6600;
+    --box-border: #6699cc;
+    --box-fill: #b1d0f0;
+    --text: #000000;
+    --link: #003399;
+    --muted: #666666;
+  }
+  body.emo {
+    --bg: #000000 url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40'%3E%3Cpath d='M20 4l4 12h12l-10 8 4 12-10-8-10 8 4-12-10-8h12z' fill='%23ff1493' opacity='.18'/%3E%3C/svg%3E");
+    --page: #111111;
+    --head: #1a1a1a;
+    --head2: #ff1493;
+    --accent: #ff1493;
+    --box-head: #ff1493;
+    --box-head-text: #000000;
+    --box-border: #ff1493;
+    --box-fill: #2a0a1f;
+    --text: #f0f0f0;
+    --link: #ff69b4;
+    --muted: #bbbbbb;
+  }
+  body.glitter {
+    --bg: #2b0047 url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24'%3E%3Ccircle cx='4' cy='6' r='1.2' fill='%23fff'/%3E%3Ccircle cx='16' cy='14' r='.8' fill='%23ffd700'/%3E%3Ccircle cx='10' cy='20' r='1' fill='%2300ffff'/%3E%3C/svg%3E");
+    --page: #fff0fb;
+    --head: #7a00cc;
+    --head2: #00cccc;
+    --accent: #cc0099;
+    --box-head: #00cccc;
+    --box-head-text: #ffffff;
+    --box-border: #7a00cc;
+    --box-fill: #f1d6ff;
+    --text: #2b0047;
+    --link: #7a00cc;
+    --muted: #6b4a80;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font: 12px/1.45 Verdana, Arial, Helvetica, sans-serif;
+  }
+  a { color: var(--link); }
+  .wrap { max-width: 820px; margin: 0 auto; background: var(--page); min-height: 100vh; display: flex; flex-direction: column; }
+
+  .topbar { background: var(--head); color: #fff; padding: 8px 12px; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between; }
+  .logo { font: bold 24px/1 Arial, sans-serif; letter-spacing: -1px; color: #fff; text-decoration: none; }
+  .logo small { font-size: 11px; font-weight: normal; letter-spacing: 0; opacity: .8; margin-left: 4px; }
+  .nav { background: var(--head2); padding: 5px 12px; display: flex; flex-wrap: wrap; gap: 4px 0; }
+  .nav a { color: #fff; font-weight: bold; font-size: 11px; text-decoration: none; padding: 0 7px; border-right: 1px solid rgba(255,255,255,.6); }
+  .nav a:last-child { border-right: 0; }
+  .nav a:hover { text-decoration: underline; }
+
+  .toolbar { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; padding: 8px 12px; border-bottom: 1px dashed var(--box-border); font-size: 11px; }
+  .toolbar .spacer { flex: 1; }
+  .btn { font: bold 11px Verdana; padding: 3px 8px; cursor: pointer; border: 1px solid #333; background: #eee; color: #000; text-decoration: none; display: inline-block; }
+  .toolbar .on { background: var(--accent); color: #fff; }
+
+  main { padding: 12px; flex: 1; }
+  
+  .box { border: 1px solid var(--box-border); margin-bottom: 12px; }
+  .box > h2 { margin: 0; background: var(--box-head); color: var(--box-head-text); font: bold 12px Verdana; padding: 3px 6px; }
+  .box .inner { padding: 8px; }
+
+  /* Bilder-Grid im Retro-Style */
+  .gallery-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 12px;
+    padding: 8px;
+  }
+  .photo-card {
+    border: 1px solid var(--box-border);
+    background: color-mix(in srgb, var(--box-fill) 30%, var(--page));
+    padding: 6px;
+    text-align: center;
+  }
+  .photo-card img {
+    width: 100%;
+    aspect-ratio: 1;
+    object-fit: cover;
+    border: 1px solid #999;
+    display: block;
+    background: #ccc;
+  }
+  .photo-card .caption {
+    font-size: 10px;
+    font-weight: bold;
+    margin-top: 4px;
+    color: var(--text);
+  }
+
+  .footer { text-align: center; font-size: 10px; color: var(--muted); padding: 14px; border-top: 1px solid var(--box-border); }
+  .footer a { margin: 0 4px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="topbar">
+      <a class="logo" href="index.html">wasAnton.de<small>a place for friends</small></a>
+    </div>
+    <nav class="nav" aria-label="Main">
+      <a href="index.html">Home</a><a href="#">Browse</a><a href="#">Search</a><a href="#">Invite</a><a href="#">Film</a><a href="#">Mail</a><a href="#">Blog</a><a href="#">Favorites</a><a href="#">Forum</a><a href="#">Groups</a><a href="#">Events</a><a href="#">Music</a><a href="#">Comedy</a>
+    </nav>
+  </header>
+
+  <div class="toolbar">
+    <a href="index.html" class="btn">&laquo; Back to Profile</a>
+    <span class="spacer"></span>
+    <span>Theme:</span>
+    <button class="btn theme on" data-theme="">Classic</button>
+    <button class="btn theme" data-theme="emo">Emo</button>
+    <button class="btn theme" data-theme="glitter">Glitter</button>
+  </div>
+
+  <main>
+    <section class="box">
+      <h2>wasAnton's Pictures</h2>
+      <div class="inner">
+        <p style="margin-top:0;"><strong>Viewing Photo Album:</strong> All Pictures</p>
+        
+        <div class="gallery-grid">
+          <!-- Bild 1 -->
+          <div class="photo-card">
+            <a href="pics/1.jpg" target="_blank">
+              <img src="pics/1.jpg" alt="Pic 1" onerror="this.src='https://via.placeholder.com/150?text=pics/1.jpg+fehlt'" />
+            </a>
+            <div class="caption">pic #1</div>
+          </div>
+
+          <!-- Bild 2 -->
+          <div class="photo-card">
+            <a href="pics/2.jpg" target="_blank">
+              <img src="pics/2.jpg" alt="Pic 2" onerror="this.src='https://via.placeholder.com/150?text=pics/2.jpg+fehlt'" />
+            </a>
+            <div class="caption">pic #2</div>
+          </div>
+
+          <!-- Bild 3 -->
+          <div class="photo-card">
+            <a href="pics/3.jpg" target="_blank">
+              <img src="pics/3.jpg" alt="Pic 3" onerror="this.src='https://via.placeholder.com/150?text=pics/3.jpg+fehlt'" />
+            </a>
+            <div class="caption">pic #3</div>
+          </div>
+
+          <!-- Bild 4 -->
+          <div class="photo-card">
+            <a href="pics/4.jpg" target="_blank">
+              <img src="pics/4.jpg" alt="Pic 4" onerror="this.src='https://via.placeholder.com/150?text=pics/4.jpg+fehlt'" />
+            </a>
+            <div class="caption">pic #4</div>
+          </div>
+
+          <!-- Weitere Bilder kannst du einfach nach diesem Schema kopieren: -->
+          <!--
+          <div class="photo-card">
+            <a href="pics/5.jpg" target="_blank">
+              <img src="pics/5.jpg" alt="Pic 5" onerror="this.src='https://via.placeholder.com/150?text=pics/5.jpg+fehlt'" />
+            </a>
+            <div class="caption">pic #5</div>
+          </div>
+          -->
+
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <a href="#">About</a>|<a href="#">FAQ</a>|<a href="#">Terms</a>|<a href="#">Privacy</a>|<a href="#">Safety Tips</a>|<a href="#">Contact wasAnton</a>
+    <div>&copy;2003-2006 wasAnton.de. All Rights Reserved.</div>
+  </footer>
+</div>
+
+<script>
+  // Theme Switcher Sync mit index.html
+  const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+  $$('.theme').forEach(b => b.addEventListener('click', () => {
+    document.body.classList.remove('emo', 'glitter');
+    if (b.dataset.theme) document.body.classList.add(b.dataset.theme);
+    $$('.theme').forEach(x => x.classList.toggle('on', x === b));
+  }));
+</script>
+</body>
+</html>

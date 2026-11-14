@@ -34,6 +34,9 @@ html,body{height:100%;margin:0;font-family:"Atkinson Hyperlegible",system-ui,san
 .rel{font-size:13px;color:var(--mute);width:4.6em}
 .l{font-style:normal;min-width:2.3em;text-align:center;padding:2px 7px;border-radius:6px;font-weight:700;font-size:14px}
 .d{flex:1;line-height:1.25}
+#body li.walk{color:var(--mute);font-size:14px}
+.late{opacity:.4}
+.tag{color:var(--acc);font-weight:700}
 .empty{padding:16px 14px;color:var(--mute)}
 .segs{display:flex;border-radius:8px;overflow:hidden;font-weight:700;font-size:13px;white-space:nowrap}
 .segs span{padding:3px 7px}
@@ -88,6 +91,11 @@ const addDay = (ymd,n) => new Date(Date.UTC(+ymd.slice(0,4),+ymd.slice(4,6)-1,+y
 const sets = {};
 const act = ymd => sets[ymd] || (DATA.svc[ymd] ? (sets[ymd] = new Set(DATA.svc[ymd])) : null);
 const hm = t => { const m=Math.floor(t/60)%1440; return String(Math.floor(m/60)).padStart(2,'0')+':'+String(m%60).padStart(2,'0'); };
+
+let pos = null; // Standort {la,lo}, sobald freigegeben
+const walk = g => { if(!pos) return null; const m = Math.hypot((g.lat-pos.la)*111320,(g.lon-pos.lo)*111320*Math.cos(pos.la*Math.PI/180))*1.3; return {w:m/1.4, r:m/2.8}; };
+const mins = s => Math.max(1, Math.round(s/60)) + ' min';
+const wr = g => { const k = walk(g); return k ? `🚶 ${mins(k.w)} · 🏃 ${mins(k.r)}` : ''; };
 
 // Nächste Abfahrten einer Steig-Richtung. Berücksichtigt Fahrten nach Mitternacht (Zeiten >24h
 // gehören zum Vortag) und den Folgetag; welche Fahrten laufen, kommt pro Datum aus dem Fahrplan
@@ -144,17 +152,18 @@ function showStop(g){ cur=g; panelMode='stop'; $('title').textContent=g.name; $(
 function draw(){
   const nw = now(), ul = $('body');
   if(panelMode === 'near'){
-    ul.innerHTML = nearList.map(([g,m],i) => `<li class="near" data-i="${i}"><span class="d"><b>${g.name}</b><br><small>${m<1000?Math.round(m/10)*10+' m':(m/1000).toFixed(1).replace('.',',')+' km'}</small></span>${segs(g,nw)}</li>`).join('');
+    ul.innerHTML = nearList.map(([g,m],i) => `<li class="near" data-i="${i}"><span class="d"><b>${g.name}</b><br><small>${m<1000?Math.round(m/10)*10+' m':(m/1000).toFixed(1).replace('.',',')+' km'} · ${wr(g)}</small></span>${segs(g,nw)}</li>`).join('');
     ul.querySelectorAll('.near').forEach(li => li.onclick = () => { const g = nearList[li.dataset.i][0]; map.flyTo([g.lat,g.lon],16); showStop(g); });
     return;
   }
   const ymd = ($('date').value || '').replace(/-/g,'') || nw.ymd, today = ymd === nw.ymd;
-  ul.innerHTML = cur.all.map(pl => {
+  const k = walk(cur);
+  ul.innerHTML = (k && today ? `<li class="walk">${wr(cur)} bis zur Haltestelle</li>` : '') + cur.all.map(pl => {
     let items;
-    if(today) items = nextDeps(pl,8,nw).map(x => ({t:x[3], r:x[1], h:x[2], rel:x[0] < 60 ? 'jetzt' : x[0] < 3600 ? 'in '+Math.floor(x[0]/60)+' min' : ''}));
+    if(today) items = nextDeps(pl,8,nw).map(x => ({t:x[3], r:x[1], h:x[2], w:x[0], rel:x[0] < 60 ? 'jetzt' : x[0] < 3600 ? 'in '+Math.floor(x[0]/60)+' min' : ''}));
     else { const set = act(ymd) || new Set(); items = []; for(let i=0;i<pl.d.length && items.length<400;i+=4) if(set.has(pl.d[i+1])) items.push({t:pl.d[i], r:pl.d[i+2], h:pl.d[i+3], rel:''}); }
     const top = items[0] ? H[items[0].h] : '';
-    return `<h3>${arrow(pl.b)} Richtung ${top}</h3>` + (items.length ? items.map(x => `<li><span class="t">${hm(x.t)}</span><span class="rel">${x.rel}</span>${badge(x.r)}<span class="d">${H[x.h]}</span></li>`).join('') : '<li class="empty">Keine Fahrten.</li>');
+    return `<h3>${arrow(pl.b)} Richtung ${top}</h3>` + (items.length ? items.map(x => { const c = k && x.w != null ? (x.w < k.r ? 'late' : x.w < k.w ? 'run' : '') : ''; return `<li class="${c}"><span class="t">${hm(x.t)}</span><span class="rel">${x.rel}</span>${badge(x.r)}<span class="d">${H[x.h]}${c==='late' ? ' <small class="tag">zu spät</small>' : c==='run' ? ' <small class="tag">nur rennend</small>' : ''}</span></li>`; }).join('') : '<li class="empty">Keine Fahrten.</li>');
   }).join('');
 }
 $('date').addEventListener('change', draw);
@@ -169,6 +178,7 @@ $('loc').onclick = () => {
   navigator.geolocation.getCurrentPosition(p => {
     status('');
     const {latitude:la, longitude:lo} = p.coords, k = Math.cos(la*Math.PI/180);
+    pos = {la, lo};
     if(me) me.remove();
     me = L.circleMarker([la,lo],{radius:8,color:'#fff',weight:3,fillColor:'#1a73e8',fillOpacity:1}).addTo(map);
     nearList = G.map(g => [g, Math.hypot((g.lat-la)*111320, (g.lon-lo)*111320*k)]).sort((a,b)=>a[1]-b[1]).slice(0,6);

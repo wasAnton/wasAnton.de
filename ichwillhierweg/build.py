@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Schreibt die Straßenbahn-Fahrplandaten in index.html.
+"""Schreibt die Fahrplandaten: Straßenbahn -> index.html, Busse -> bus-data.js.
 Aufruf: python3 build.py VAGFR.zip   (neue Zip von der VAG, wenn der Fahrplan abläuft)"""
 import csv, io, json, math, re, sys, zipfile
 from collections import defaultdict
@@ -9,8 +9,14 @@ zf = zipfile.ZipFile(sys.argv[1] if len(sys.argv) > 1 else 'VAGFR.zip')
 rows = lambda n: csv.DictReader(io.TextIOWrapper(zf.open(n), encoding='utf-8-sig'))
 secs = lambda s: sum(int(x) * m for x, m in zip(s.split(':'), (3600, 60, 1)))
 
-routes = [r for r in rows('routes.txt') if r['route_type'] == '0' or 900 <= int(r['route_type']) < 1000]
+def kind_of(t):  # T = Straßenbahn, B = Bus, sonst None
+    t = int(t)
+    if t == 0 or 900 <= t < 1000: return 'T'
+    if t == 3 or 700 <= t < 900: return 'B'
+
+routes = [r for r in rows('routes.txt') if kind_of(r['route_type'])]
 rix = {r['route_id']: i for i, r in enumerate(routes)}
+kind = {r['route_id']: kind_of(r['route_type']) for r in routes}
 trips = {t['trip_id']: t for t in rows('trips.txt') if t['route_id'] in rix}
 stops = {s['stop_id']: s for s in rows('stops.txt')}
 st = defaultdict(list)
@@ -22,19 +28,19 @@ sids = sorted({t['service_id'] for t in trips.values()})
 six = {s: i for i, s in enumerate(sids)}
 heads, hix = [], {}
 nm = lambda sid: re.sub(r'^Freiburg, ', '', stops[sid]['stop_name']).strip()
-gkey = lambda sid: stops[sid]['parent_station'] or stops[sid]['stop_name']  # beide Richtungen/Steige einer Haltestelle
+gkey = lambda sid: stops[sid]['parent_station'] or stops[sid]['stop_name']  # alle Steige einer Haltestelle
 ll = lambda sid: (float(stops[sid]['stop_lat']), float(stops[sid]['stop_lon']))
 
 plat = defaultdict(lambda: {'d': [], 'x': 0.0, 'y': 0.0})
 for tid, lst in st.items():
     lst.sort()
-    t = trips[tid]
+    t = trips[tid]; kd = kind[t['route_id']]
     h = t.get('trip_headsign') or nm(lst[-1][1])
     if h not in hix:
         hix[h] = len(heads); heads.append(h)
     for i in range(len(lst) - 1):  # Endhaltestelle hat keine Abfahrt
         sid = lst[i][1]
-        p = plat[sid]
+        p = plat[(sid, kd)]
         p['d'].append((secs(lst[i][2]), six[t['service_id']], rix[t['route_id']], hix[h]))
         (a, o), (b, q) = ll(sid), ll(lst[i + 1][1])
         dy, dx = b - a, (q - o) * math.cos(math.radians(a))
@@ -42,15 +48,15 @@ for tid, lst in st.items():
         p['x'] += dx / n; p['y'] += dy / n
 
 byname = defaultdict(list)
-for sid in plat: byname[gkey(sid)].append(sid)
-G = []
-for key, ids in sorted(byname.items()):
+for sid, kd in plat: byname[(kd, gkey(sid))].append(sid)
+G = {'T': [], 'B': []}
+for (kd, key), ids in sorted(byname.items()):
     name = nm(key) if key in stops else nm(ids[0])
     ps = []
     for sid in ids:
-        p = plat[sid]; p['d'].sort()
+        p = plat[(sid, kd)]; p['d'].sort()
         ps.append([round(math.degrees(math.atan2(p['x'], p['y'])) % 360), [v for d in p['d'] for v in d]])
-    G.append([name, round(sum(ll(i)[0] for i in ids) / len(ids), 5), round(sum(ll(i)[1] for i in ids) / len(ids), 5), ps])
+    G[kd].append([name, round(sum(ll(i)[0] for i in ids) / len(ids), 5), round(sum(ll(i)[1] for i in ids) / len(ids), 5), ps])
 
 cal = {c['service_id']: c for c in rows('calendar.txt') if c['service_id'] in six}
 exc = defaultdict(lambda: {'1': set(), '2': set()})
@@ -67,10 +73,12 @@ while d.strftime('%Y%m%d') <= last:
     svc[ymd] = sorted(six[s] for s in on)
     d += timedelta(days=1)
 
+dump = lambda o: json.dumps(o, ensure_ascii=False, separators=(',', ':'))
 data = {'routes': [[r['route_short_name'], r['route_color'] or '17211d', r['route_text_color'] or 'ffffff'] for r in routes],
-        'heads': heads, 'svc': svc, 'g': G}
-js = json.dumps(data, ensure_ascii=False, separators=(',', ':'))
+        'heads': heads, 'svc': svc, 'g': G['T']}
 html = open('index.html', encoding='utf-8').read()
-html = re.sub(r'/\*DATA_START\*/.*?/\*DATA_END\*/', lambda m: '/*DATA_START*/const DATA=' + js + ';/*DATA_END*/', html, flags=re.S)
+html = re.sub(r'/\*DATA_START\*/.*?/\*DATA_END\*/', lambda m: '/*DATA_START*/const DATA=' + dump(data) + ';/*DATA_END*/', html, flags=re.S)
 open('index.html', 'w', encoding='utf-8').write(html)
-print(f'{len(G)} Haltestellen, {len(trips)} Fahrten, Fahrplan bis {last}, {len(html)//1024} KB')
+open('bus-data.js', 'w', encoding='utf-8').write('window.BUS=' + dump(G['B']) + ';')
+print(f"{len(G['T'])} Tram-Haltestellen, {len(G['B'])} Bus-Haltestellen, {len(trips)} Fahrten, Fahrplan bis {last}")
+print(f"index.html {len(html)//1024} KB, bus-data.js {len(dump(G['B']))//1024} KB")

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""Schreibt die Fahrplandaten: Straßenbahn -> index.html, Busse -> bus-data.js.
+"""Schreibt die Fahrplandaten: Straßenbahn und (gepackt) Busse -> index.html.
 Aufruf: python3 build.py VAGFR.zip   (neue Zip von der VAG, wenn der Fahrplan abläuft)"""
-import csv, io, json, math, re, sys, zipfile
+import base64, csv, gzip, io, json, math, re, sys, zipfile
 from collections import defaultdict
 from datetime import date, timedelta
 
@@ -78,7 +78,8 @@ data = {'routes': [[r['route_short_name'], r['route_color'] or '17211d', r['rout
         'heads': heads, 'svc': svc, 'g': G['T']}
 html = open('index.html', encoding='utf-8').read()
 html = re.sub(r'/\*DATA_START\*/.*?/\*DATA_END\*/', lambda m: '/*DATA_START*/const DATA=' + dump(data) + ';/*DATA_END*/', html, flags=re.S)
+busz = base64.b64encode(gzip.compress(dump(G['B']).encode('utf-8'), 9, mtime=0)).decode()
+html = re.sub(r'/\*BUS_START\*/.*?/\*BUS_END\*/', lambda m: '/*BUS_START*/const BUSZ="' + busz + '";/*BUS_END*/', html, flags=re.S)
 open('index.html', 'w', encoding='utf-8').write(html)
-open('bus-data.js', 'w', encoding='utf-8').write('window.BUS=' + dump(G['B']) + ';')
 print(f"{len(G['T'])} Tram-Haltestellen, {len(G['B'])} Bus-Haltestellen, {len(trips)} Fahrten, Fahrplan bis {last}")
-print(f"index.html {len(html)//1024} KB, bus-data.js {len(dump(G['B']))//1024} KB")
+print(f"index.html {len(html)//1024} KB (davon Busdaten gepackt {len(busz)//1024} KB)")
